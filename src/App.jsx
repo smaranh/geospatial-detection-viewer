@@ -10,6 +10,7 @@
  * - Req 5: Priority-based label visibility
  * - Req 6: Perfect alignment via shared viewState
  * - Adv 1: Viewport-based rendering (only visible detections sent to GPU)
+ * - Adv 2+3: Web Worker — quadtree build + query offloaded to dedicated thread
  */
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
@@ -22,7 +23,8 @@ import { createBaseLayers } from './layers/createBaseLayers.js';
 import { createMapTileLayer } from './layers/createMapTileLayer.js';
 import { createDetectionLayers } from './layers/createDetectionLayers.js';
 import { generateDetections, getDetectionStats } from './data/generateDetections.js';
-import { getViewportBounds, filterDetectionsByViewport } from './utils/viewport.js';
+import { getViewportBounds, addViewportPadding } from './utils/viewport.js';
+import { WORLD_WIDTH, WORLD_HEIGHT } from './constants.js';
 import ZoomIndicator from './components/ZoomIndicator.jsx';
 import InfoPanel from './components/InfoPanel.jsx';
 import Minimap from './components/Minimap.jsx';
@@ -49,6 +51,12 @@ export default function App() {
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const containerRef = useRef(null);
 
+  // --- Adv Req 3: Web Worker state ---
+  const workerRef = useRef(null);
+  const queryIdRef = useRef(0);         // Monotonic counter for stale response detection
+  const [workerReady, setWorkerReady] = useState(false);
+  const [visibleIds, setVisibleIds] = useState([]);
+
   const zoomStep = layerMode === 'map' ? ZOOM_STEP_MAP : ZOOM_STEP_PROCEDURAL;
 
   // Clear cursor when mode changes
@@ -67,6 +75,74 @@ export default function App() {
   }, [layerMode]);
 
   const detectionStats = useMemo(() => getDetectionStats(detections), [detections]);
+
+  // --- Adv Req 3: Detection lookup map for O(1) ID → detection ---
+  const detectionMap = useMemo(
+    () => new Map(detections.map(d => [d.id, d])),
+    [detections],
+  );
+
+  // --- Compute world bounds for Quadtree (extracted from old quadtree useMemo) ---
+  const worldBounds = useMemo(() => {
+    if (layerMode === 'map') {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const d of detections) {
+        if (d.bounds[0] < minX) minX = d.bounds[0];
+        if (d.bounds[1] < minY) minY = d.bounds[1];
+        if (d.bounds[2] > maxX) maxX = d.bounds[2];
+        if (d.bounds[3] > maxY) maxY = d.bounds[3];
+      }
+      const margin = 0.01;
+      return [minX - margin, minY - margin, maxX + margin, maxY + margin];
+    }
+    return [0, 0, WORLD_WIDTH, WORLD_HEIGHT];
+  }, [detections, layerMode]);
+
+  // --- Adv Req 3: Web Worker lifecycle (init / cleanup) ---
+  useEffect(() => {
+    // Create worker and send detections for quadtree construction
+    const worker = new Worker(
+      new URL('./workers/spatialWorker.js', import.meta.url),
+      { type: 'module' },
+    );
+    workerRef.current = worker;
+    setWorkerReady(false);
+    setVisibleIds([]);
+    queryIdRef.current = 0;
+
+    worker.onmessage = (e) => {
+      const { type } = e.data;
+      if (type === 'READY') {
+        setWorkerReady(true);
+      } else if (type === 'RESULT') {
+        const { ids, queryId } = e.data;
+        // Discard stale responses
+        if (queryId >= queryIdRef.current) {
+          setVisibleIds(ids);
+        }
+      }
+    };
+
+    worker.postMessage({ type: 'INIT', detections, worldBounds });
+
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, [detections, worldBounds]);
+
+  // --- Adv Req 3: Send QUERY to worker on viewport change ---
+  useEffect(() => {
+    if (!workerReady || !workerRef.current) return;
+    const vpBounds = getViewportBounds(
+      viewState, layerMode,
+      containerSize.width, containerSize.height,
+    );
+    if (!vpBounds) return;
+    const paddedBounds = addViewportPadding(vpBounds, 1);
+    const qId = ++queryIdRef.current;
+    workerRef.current.postMessage({ type: 'QUERY', bounds: paddedBounds, queryId: qId });
+  }, [workerReady, viewState, layerMode, containerSize.width, containerSize.height]);
 
   // Track container size
   useEffect(() => {
@@ -124,17 +200,13 @@ export default function App() {
     }
   }, []);
 
-  // --- Adv Req 1: Viewport-based detection culling ---
-  // Compute visible detections based on current viewport bounds.
-  // Only detections whose AABB overlaps the viewport (with 10% padding) are rendered.
+  // --- Adv Req 3: Visible detections from Worker results ---
+  // Maps worker-returned IDs through detectionMap for O(1) lookups.
+  // Falls back to all detections until the worker delivers its first result.
   const visibleDetections = useMemo(() => {
-    const vpBounds = getViewportBounds(
-      viewState, layerMode,
-      containerSize.width, containerSize.height,
-    );
-    if (!vpBounds) return detections;
-    return filterDetectionsByViewport(detections, vpBounds);
-  }, [detections, viewState, layerMode, containerSize.width, containerSize.height]);
+    if (!workerReady || !visibleIds.length) return detections;
+    return visibleIds.map(id => detectionMap.get(id)).filter(Boolean);
+  }, [workerReady, visibleIds, detectionMap, detections]);
 
   // --- Build layer stack ---
   const layers = useMemo(() => {

@@ -96,3 +96,22 @@ export function filterDetectionsByViewport(detections, vpBounds, paddingFactor =
 
     return detections.filter(d => isInViewport(d.bounds, paddedBounds));
 }
+
+/**
+ * Add padding to viewport bounds.
+ * Extracted for reuse with Quadtree queries.
+ *
+ * @param {number[]} vpBounds - Viewport bounds [minX, minY, maxX, maxY]
+ * @param {number} [paddingFactor=0.1] - Padding as fraction of viewport size
+ * @returns {number[]} Padded bounds [minX, minY, maxX, maxY]
+ */
+export function addViewportPadding(vpBounds, paddingFactor = 0.1) {
+    const padX = (vpBounds[2] - vpBounds[0]) * paddingFactor;
+    const padY = (vpBounds[3] - vpBounds[1]) * paddingFactor;
+    return [
+        vpBounds[0] - padX,
+        vpBounds[1] - padY,
+        vpBounds[2] + padX,
+        vpBounds[3] + padY,
+    ];
+}
