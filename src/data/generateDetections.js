@@ -2,7 +2,7 @@
  * generateDetections.js
  * Generates synthetic detection bounding box data that mimics real CV model output.
  * 
- * Produces 7,500 detections (within the 5K–10K requirement) with:
+ * Produces 10,000 detections (within the 5K–10K requirement) with:
  * - Realistic category distribution (vehicles most common, aircraft rare)
  * - Spatial clustering (dense clusters in some areas, sparse in others)
  * - Confidence scores following a realistic distribution (most 0.6–0.95)
@@ -15,7 +15,7 @@
 
 import { CATEGORIES, WORLD_WIDTH, WORLD_HEIGHT, MAP_DEFAULT_CENTER } from '../constants.js';
 
-const DETECTION_COUNT = 7500;
+const DETECTION_COUNT = 10000;
 
 // --- Seeded PRNG for reproducible results ---
 function createRNG(seed = 42) {
@@ -170,6 +170,9 @@ export function generateDetections(mode = 'map', count = DETECTION_COUNT) {
         let polygon;
         let labelPosition;
 
+        // Precomputed AABB for viewport culling: [minX, minY, maxX, maxY]
+        let bounds;
+
         if (mode === 'map') {
             // [lng, lat] coordinates
             const lng = pos.x;
@@ -182,6 +185,7 @@ export function generateDetections(mode = 'map', count = DETECTION_COUNT) {
                 [lng, lat], // close the polygon
             ];
             labelPosition = [lng, lat + h]; // top-left of box
+            bounds = [lng, lat, lng + w, lat + h];
         } else {
             // [x, y] pixel coordinates — clamp to world bounds
             const x = Math.max(0, Math.min(WORLD_WIDTH - w, pos.x));
@@ -194,6 +198,7 @@ export function generateDetections(mode = 'map', count = DETECTION_COUNT) {
                 [x, y], // close the polygon
             ];
             labelPosition = [x, y]; // top-left of box
+            bounds = [x, y, x + w, y + h];
         }
 
         const categoryInfo = CATEGORIES[category];
@@ -202,6 +207,7 @@ export function generateDetections(mode = 'map', count = DETECTION_COUNT) {
             id: i,
             polygon,
             labelPosition,
+            bounds,
             category,
             label: categoryInfo.label,
             confidence,

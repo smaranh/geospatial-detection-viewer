@@ -16,7 +16,7 @@ function formatLatLng(lat, lng) {
     return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lng).toFixed(4)}° ${lngDir}`;
 }
 
-export default function InfoPanel({ viewState, cursorWorld, mode, detectionStats }) {
+export default function InfoPanel({ viewState, cursorWorld, mode, detectionStats, visibleCount }) {
     const isMap = mode === 'map';
 
     // Zoom display
@@ -106,8 +106,15 @@ export default function InfoPanel({ viewState, cursorWorld, mode, detectionStats
                 {detectionStats && (
                     <div className="info-panel__stat">
                         <span className="info-panel__stat-label">Detections</span>
-                        <span className="info-panel__stat-value" style={{ color: 'var(--color-accent-amber)' }}>
-                            {detectionStats.total.toLocaleString()}
+                        <span className="info-panel__stat-value">
+                            <span style={{ color: 'var(--color-accent-amber)' }}>
+                                {visibleCount != null ? visibleCount.toLocaleString() : detectionStats.total.toLocaleString()}
+                            </span>
+                            {visibleCount != null && (
+                                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85em' }}>
+                                    {' '}/ {detectionStats.total.toLocaleString()}
+                                </span>
+                            )}
                         </span>
                     </div>
                 )}

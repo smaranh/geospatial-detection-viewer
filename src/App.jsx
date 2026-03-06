@@ -5,10 +5,11 @@
  * Implements:
  * - Req 1: Cursor-centered pan/zoom (10%–800% clamp in procedural mode)
  * - Req 2: Base layer (procedural tiles OR real map tiles)
- * - Req 3: 7,500 detection bounding box overlay
+ * - Req 3: 10,000 detection bounding box overlay
  * - Req 4: Zoom-scaled boxes/labels with screen-space clamps
  * - Req 5: Priority-based label visibility
  * - Req 6: Perfect alignment via shared viewState
+ * - Adv 1: Viewport-based rendering (only visible detections sent to GPU)
  */
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
@@ -21,6 +22,7 @@ import { createBaseLayers } from './layers/createBaseLayers.js';
 import { createMapTileLayer } from './layers/createMapTileLayer.js';
 import { createDetectionLayers } from './layers/createDetectionLayers.js';
 import { generateDetections, getDetectionStats } from './data/generateDetections.js';
+import { getViewportBounds, filterDetectionsByViewport } from './utils/viewport.js';
 import ZoomIndicator from './components/ZoomIndicator.jsx';
 import InfoPanel from './components/InfoPanel.jsx';
 import Minimap from './components/Minimap.jsx';
@@ -122,6 +124,18 @@ export default function App() {
     }
   }, []);
 
+  // --- Adv Req 1: Viewport-based detection culling ---
+  // Compute visible detections based on current viewport bounds.
+  // Only detections whose AABB overlaps the viewport (with 10% padding) are rendered.
+  const visibleDetections = useMemo(() => {
+    const vpBounds = getViewportBounds(
+      viewState, layerMode,
+      containerSize.width, containerSize.height,
+    );
+    if (!vpBounds) return detections;
+    return filterDetectionsByViewport(detections, vpBounds);
+  }, [detections, viewState, layerMode, containerSize.width, containerSize.height]);
+
   // --- Build layer stack ---
   const layers = useMemo(() => {
     // Base layers
@@ -129,16 +143,16 @@ export default function App() {
       ? [createMapTileLayer({ server: tileServer })]
       : createBaseLayers();
 
-    // Detection layers (on top of base)
+    // Detection layers — only visible subset (viewport-culled)
     const detectionLayers = createDetectionLayers({
-      detections,
+      detections: visibleDetections,
       currentZoom: viewState.zoom,
       mode: layerMode,
       onHover: onDetectionHover,
     });
 
     return [...base, ...detectionLayers];
-  }, [layerMode, tileServer, detections, viewState.zoom, onDetectionHover]);
+  }, [layerMode, tileServer, visibleDetections, viewState.zoom, onDetectionHover]);
 
   // View configuration
   const views = useMemo(() => {
@@ -191,6 +205,7 @@ export default function App() {
         cursorWorld={cursorWorld}
         mode={layerMode}
         detectionStats={detectionStats}
+        visibleCount={visibleDetections.length}
       />
 
       {/* HUD: Layer toggle (top-right) */}

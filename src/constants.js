@@ -26,7 +26,7 @@ export const percentToZoom = (pct) => Math.log2(pct / 100);
 // --- Map Mode (Geographic) ---
 // Default center: San Francisco (visually interesting urban area)
 export const MAP_DEFAULT_CENTER = { longitude: -122.4194, latitude: 37.7749 };
-export const MAP_DEFAULT_ZOOM = 12;    // City-level overview
+export const MAP_DEFAULT_ZOOM = 15;    // City-level overview
 export const MAP_MIN_ZOOM = 2;         // Continental view
 export const MAP_MAX_ZOOM = 18;        // Street level
 
