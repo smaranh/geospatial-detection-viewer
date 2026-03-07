@@ -29,7 +29,7 @@ export default function LayerToggle({ mode, tileServer, onModeChange, onTileServ
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div id="layer-toggle" className="layer-toggle animate-fade-in">
+        <div id="layer-toggle" className="layer-toggle theme-light animate-fade-in">
             {/* Toggle button */}
             <button
                 className="layer-toggle__btn"

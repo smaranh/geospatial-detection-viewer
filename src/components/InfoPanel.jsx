@@ -72,7 +72,7 @@ export default function InfoPanel({
     }, [cursorWorld, isMap]);
 
     return (
-        <div id="info-panel" className="info-panel animate-fade-in">
+        <div id="info-panel" className="info-panel theme-light animate-fade-in">
             {/* App title */}
             <div className="info-panel__title">
                 <div className="info-panel__logo">G</div>

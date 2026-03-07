@@ -55,7 +55,7 @@ export default function ZoomIndicator({ viewState, onZoomIn, onZoomOut, onReset,
         : `${zoomToPercent(viewState.zoom)}%`;
 
     return (
-        <div id="zoom-indicator" className="zoom-indicator animate-fade-in">
+        <div id="zoom-indicator" className="zoom-indicator theme-light animate-fade-in">
             {/* Zoom badge */}
             <div className="zoom-badge" title={`Zoom: ${zoomDisplay} (scroll to zoom, drag to pan)`}>
                 <span className="zoom-badge__icon">
