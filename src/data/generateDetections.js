@@ -15,7 +15,7 @@
 
 import { CATEGORIES, WORLD_WIDTH, WORLD_HEIGHT, MAP_DEFAULT_CENTER } from '../constants.js';
 
-const DETECTION_COUNT = 10000;
+const DEFAULT_DETECTION_COUNT = 10000;
 
 // --- Seeded PRNG for reproducible results ---
 function createRNG(seed = 42) {
@@ -149,7 +149,7 @@ function generateConfidence(rand) {
  * @param {number} [count=7500]
  * @returns {Object[]} Array of detection objects
  */
-export function generateDetections(mode = 'map', count = DETECTION_COUNT) {
+export function generateDetections(mode = 'map', count = DEFAULT_DETECTION_COUNT) {
     const rand = createRNG(12345);
     const clusters = mode === 'map' ? MAP_CLUSTERS : PROC_CLUSTERS;
     const sizes = mode === 'map' ? CATEGORY_SIZES : CATEGORY_SIZES_PX;

@@ -24,8 +24,10 @@ export default function GeoSpatialViewer({
     detectionStats,
     layerMode,
     tileServer,
+    detectionCount,
     onModeChange,
-    onTileServerChange
+    onTileServerChange,
+    onDetectionCountChange
 }) {
     const {
         viewState,
@@ -250,6 +252,8 @@ export default function GeoSpatialViewer({
                 mode={layerMode}
                 detectionStats={detectionStats}
                 visibleCount={visibleDetections.length}
+                detectionCount={detectionCount}
+                onDetectionCountChange={onDetectionCountChange}
             />
 
             <LayerToggle

@@ -16,8 +16,18 @@ function formatLatLng(lat, lng) {
     return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lng).toFixed(4)}° ${lngDir}`;
 }
 
-export default function InfoPanel({ viewState, cursorWorld, mode, detectionStats, visibleCount }) {
+export default function InfoPanel({
+    viewState,
+    cursorWorld,
+    mode,
+    detectionStats,
+    visibleCount,
+    detectionCount,
+    onDetectionCountChange
+}) {
     const isMap = mode === 'map';
+
+    const counts = [10000, 100000];
 
     // Zoom display
     const zoomDisplay = useMemo(() => {
@@ -67,6 +77,19 @@ export default function InfoPanel({ viewState, cursorWorld, mode, detectionStats
             <div className="info-panel__title">
                 <div className="info-panel__logo">G</div>
                 <span className="info-panel__name">Geospatial Detection Viewer</span>
+            </div>
+
+            {/* Scale Selector */}
+            <div className="info-panel__scale-selector">
+                {counts.map((count) => (
+                    <button
+                        key={count}
+                        className={`scale-btn ${detectionCount === count ? 'scale-btn--active' : ''}`}
+                        onClick={() => onDetectionCountChange(count)}
+                    >
+                        {count / 1000}k
+                    </button>
+                ))}
             </div>
 
             {/* Stats */}
