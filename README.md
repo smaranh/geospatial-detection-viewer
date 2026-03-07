@@ -1,16 +1,29 @@
-# React + Vite
+# 🌍 Zoom-Aware Geospatial Detection Viewer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### [🔗 Live Demo](https://smaranh.github.io/geospatial-detection-viewer)
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Quick Start
 
-## React Compiler
+```bash
+npm install
+npm start
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Overview
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+A high-performance viewer that overlays **10,000 detection bounding boxes** on geospatial layers with zoom-aware label visibility, viewport culling, and interactive tooltips — built with **React 19**, **deck.gl 9**, and **Vite**.
+
+## Key Architectural Decisions
+
+- **deck.gl over ArcGIS** — GPU-instanced rendering via `PolygonLayer`, handles 100K+ features in a single draw call
+- **Dual-Mode Base Layer** — `OrthographicView` (procedural pixel-space) + `MapView` (CartoDB/OSM tiles) — no API keys required
+- **Viewport Culling** — Precomputed `AABB` per detection, filtered by viewport bounds each frame
+- **Quadtree Spatial Index** — `O(log n + k)` query replaces linear `O(n)` scan; build ~5ms, query <1ms
+- **Web Worker** — Quadtree build + query offloaded via `INIT`/`QUERY`/`RESULT` message protocol; returns IDs (not objects) to minimize `postMessage` cost
+- **Priority × Zoom Filtering** — Labels progressively revealed by `priority` level at configurable zoom thresholds
+
+> 📄 *See the companion **Technical Deep Dive** document for full architecture details, data flow diagrams, and scalability analysis.*
