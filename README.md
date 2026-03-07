@@ -26,4 +26,4 @@ A high-performance viewer that overlays **10,000 detection bounding boxes** on g
 - **Web Worker** — Quadtree build + query offloaded via `INIT`/`QUERY`/`RESULT` message protocol; returns IDs (not objects) to minimize `postMessage` cost
 - **Priority × Zoom Filtering** — Labels progressively revealed by `priority` level at configurable zoom thresholds
 
-> 📄 *See the companion **Technical Deep Dive** document for full architecture details, data flow diagrams, and scalability analysis.*
+> 📄 *See the companion **[Technical Deep Dive](https://github.com/smaranh/geospatial-detection-viewer/blob/main/TECHNICAL_DESIGN.md)** document for full architecture details, data flow diagrams, and scalability analysis.*
