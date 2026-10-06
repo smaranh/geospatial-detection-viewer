@@ -2,10 +2,11 @@
  * createMapTileLayer.js
  * Creates a deck.gl TileLayer that loads raster map tiles from a free tile server.
  * 
- * Uses CartoDB's dark basemap (no API key required):
+ * Uses CartoDB's dark basemap:
  * - Lightweight: tiles are ~10–30KB each (PNG)
  * - Dark theme: matches our UI aesthetic
- * - Free: no registration or API key needed
+ * - Free tier, but CARTO requires an API key (https://carto.com/basemaps/apikey)
+ *   for non-localhost origins. Set VITE_CARTO_API_KEY at build time.
  * 
  * The TileLayer handles:
  * - Tile URL construction from {z}/{x}/{y} template
@@ -17,11 +18,14 @@
 import { TileLayer } from '@deck.gl/geo-layers';
 import { BitmapLayer } from '@deck.gl/layers';
 
-// Free, dark-themed tile servers (no API key required)
+// CARTO basemap key, appended as ?key=... (public by design: it ships in the bundle)
+const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY;
+const CARTO_KEY_PARAM = CARTO_API_KEY ? `?key=${encodeURIComponent(CARTO_API_KEY)}` : '';
+
 const TILE_SERVERS = {
-    cartoDark: 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-    cartoLight: 'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
-    cartoVoyager: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+    cartoDark: `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png${CARTO_KEY_PARAM}`,
+    cartoLight: `https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png${CARTO_KEY_PARAM}`,
+    cartoVoyager: `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png${CARTO_KEY_PARAM}`,
     osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 };
 
